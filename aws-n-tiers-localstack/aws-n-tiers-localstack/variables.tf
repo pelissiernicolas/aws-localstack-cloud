@@ -14,12 +14,7 @@ variable "vpc_cidr" {
 }
 
 variable "db_username" {
-  type    = string
-  default = "admin"
-}
-
-variable "db_password" {
-  type      = string
-  default   = "Password123!"
-  sensitive = true
+  description = "Nom d'utilisateur applicatif stocké dans Secrets Manager"
+  type        = string
+  default     = "admin"
 }

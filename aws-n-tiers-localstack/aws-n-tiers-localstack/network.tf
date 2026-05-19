@@ -43,19 +43,6 @@ resource "aws_subnet" "web" {
   }
 }
 
-resource "aws_subnet" "db" {
-  count = 3
-
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "172.16.${count.index + 20}.0/24"
-  availability_zone = "${var.aws_region}${element(["a", "b", "c"], count.index)}"
-
-  tags = {
-    Name = "${var.project_name}-db-${count.index + 1}"
-    Tier = "database"
-  }
-}
-
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -114,12 +101,5 @@ resource "aws_route_table_association" "web" {
   count = 3
 
   subnet_id      = aws_subnet.web[count.index].id
-  route_table_id = aws_route_table.private.id
-}
-
-resource "aws_route_table_association" "db" {
-  count = 3
-
-  subnet_id      = aws_subnet.db[count.index].id
   route_table_id = aws_route_table.private.id
 }

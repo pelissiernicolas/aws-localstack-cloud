@@ -4,4 +4,25 @@ LocalStack/commande.txt
 app/index.php
 localstack-cli-2026.3.0-windows-amd64-onefile/localstack.exe
 localstack-cli-2026.3.0-windows-amd64-onefile/localstack.exe:Zone.Identifier
+
+# Terraform
 .terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+crash.*.log
+
+# Env générés et secrets
+.env.local
+.envrc
+*.tfvars
+!terraform.tfvars
+!*.tfvars.example
+
+# SSH (garder la pub, ignorer la privée)
+**/localstack
+!**/localstack.pub
+
+# OS / IDE
+.DS_Store
+.vscode/
