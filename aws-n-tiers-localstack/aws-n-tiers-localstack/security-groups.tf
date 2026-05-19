@@ -46,11 +46,11 @@ resource "aws_security_group" "web" {
   }
 
   ingress {
-    description = "SSH depuis le host LocalStack"
+    description = "SSH via var.allowed_ssh_cidrs"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_ssh_cidrs
   }
 
   egress {

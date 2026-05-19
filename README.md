@@ -27,8 +27,8 @@ Lab d'infrastructure n-tiers AWS déployé sur **LocalStack Pro** via Terraform.
 | Composant | Ressource Terraform | Description |
 |---|---|---|
 | Réseau | `aws_vpc`, `aws_subnet`, `aws_internet_gateway`, `aws_nat_gateway`, `aws_route_table` | VPC `172.16.0.0/16`, 3 AZ, subnets public + web, NAT vers Internet |
-| Sécurité | `aws_security_group` | SG ALB (80/443 public), SG web (80 depuis ALB + 22 SSH) |
-| Calcul | `aws_instance`, `aws_key_pair`, `data.aws_ami` | 1 instance Ubuntu dans le subnet public, clé SSH `localstack` |
+| Sécurité | `aws_security_group` | SG ALB (80/443 public), SG web (80 depuis ALB + 22 SSH configurable via `var.allowed_ssh_cidrs`) |
+| Calcul | `aws_instance`, `aws_key_pair`, `data.aws_ami` | 1 instance Ubuntu dans le subnet public, AMI résolue dynamiquement (Canonical) ou overridable via `var.web_ami_id`, clé SSH `localstack` |
 | Données | `aws_dynamodb_table` | Table `lab-factory-table`, `PAY_PER_REQUEST`, PITR + SSE actifs |
 | Secrets | `aws_secretsmanager_secret`, `random_password` | Credentials applicatifs (username + password 24 chars généré) |
 | DevX | `local_file` | Génère `.env.local` après chaque `apply` |
@@ -144,10 +144,15 @@ terraform destroy
 
 ## Sécurité
 
-- Le **password DB n'apparaît jamais** dans les outputs Terraform, ni dans le state non chiffré, ni dans `.env.local`. Il vit uniquement dans Secrets Manager et est récupéré à la demande.
+- Le **password DB n'apparaît pas dans les outputs Terraform** ni dans `.env.local` (seul l'ARN du secret est exposé). Il est récupéré à la demande via `secretsmanager:GetSecretValue`.
+- ⚠️ **Le password EST présent dans le state Terraform** (marqué `sensitive`) parce que `random_password.db.result` et `aws_secretsmanager_secret_version.secret_string` y sont persistés. Conséquences :
+  - Le `terraform.tfstate` local **n'est pas chiffré** par défaut → ne pas le commiter (déjà dans `.gitignore`), ne pas le partager.
+  - Pour un usage sérieux : utiliser un **backend distant chiffré** (S3 + KMS, Terraform Cloud, HCP Terraform) avec accès restreint.
+  - Alternative : utiliser l'argument **`secret_string_wo`** (write-only, Terraform ≥ 1.11 + AWS provider ≥ 5.83) qui n'est pas persisté en state.
 - La **clé SSH privée** (`localstack`) est dans `.gitignore` (seule la `.pub` est versionnée).
 - Le `.env.local` est généré avec les permissions `0600` et ignoré par git.
-- `terraform.tfvars` est également ignoré : ne jamais y mettre de credentials.
+- **`terraform.tfvars` est versionné** dans ce repo (les `.gitignore` ré-incluent explicitement `!terraform.tfvars`), mais **ne contient aucun credential** — uniquement des valeurs non sensibles (`project_name`, `aws_region`, `vpc_cidr`, `db_username`). Tout secret doit passer par Secrets Manager.
+- **SSH ouvert à `0.0.0.0/0` par défaut** via `var.allowed_ssh_cidrs` — acceptable pour LocalStack en local, mais **à restreindre obligatoirement sur AWS réel** (CIDR de votre IP, bastion, SSM Session Manager).
 
 ## Structure du repo
 
@@ -158,11 +163,11 @@ terraform destroy
 └── aws-n-tiers-localstack/
     └── aws-n-tiers-localstack/
         ├── provider.tf                  # Providers AWS / random / local + endpoints LocalStack
-        ├── variables.tf                 # Variables (project_name, region, vpc_cidr, db_username)
-        ├── terraform.tfvars             # Valeurs (sans credentials)
+        ├── variables.tf                 # Variables (project_name, region, vpc_cidr, db_username, web_ami_id, allowed_ssh_cidrs)
+        ├── terraform.tfvars             # Valeurs versionnées non sensibles (pas de credentials)
         ├── network.tf                   # VPC, subnets, IGW, NAT, route tables
-        ├── security-groups.tf           # SG ALB et web
-        ├── ec2.tf                       # key_pair, AMI lookup, instance
+        ├── security-groups.tf           # SG ALB et web (SSH paramétrable)
+        ├── ec2.tf                       # key_pair, data aws_ami Canonical, instance
         ├── dynamodb.tf                  # Table DynamoDB
         ├── secrets.tf                   # random_password + Secrets Manager
         ├── load-balancer.tf             # ALB (commenté, à activer)

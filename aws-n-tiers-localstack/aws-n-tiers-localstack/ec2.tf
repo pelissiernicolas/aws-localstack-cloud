@@ -3,14 +3,22 @@ resource "aws_key_pair" "localstack" {
   public_key = file("${path.module}/localstack.pub")
 }
 
-variable "web_ami_id" {
-  description = "AMI ID compatible LocalStack Docker VM manager (Ubuntu 22.04 par défaut)"
-  type        = string
-  default     = "ami-df5de72bdb3b"
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd*/ubuntu-*"]
+  }
+}
+
+locals {
+  web_ami = coalesce(var.web_ami_id, data.aws_ami.ubuntu.id)
 }
 
 resource "aws_instance" "web" {
-  ami                         = var.web_ami_id
+  ami                         = local.web_ami
   instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.public[0].id
   key_name                    = aws_key_pair.localstack.key_name
