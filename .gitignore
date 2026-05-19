@@ -1,0 +1,7 @@
+aws-n-tiers-localstack.zip
+app/docker-compose.yml
+LocalStack/commande.txt
+app/index.php
+localstack-cli-2026.3.0-windows-amd64-onefile/localstack.exe
+localstack-cli-2026.3.0-windows-amd64-onefile/localstack.exe:Zone.Identifier
+.terraform/
