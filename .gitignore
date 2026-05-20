@@ -26,3 +26,4 @@ crash.*.log
 # OS / IDE
 .DS_Store
 .vscode/
+aws-n-tiers-localstack/aws-n-tiers-localstack/.terraform.lock.hcl

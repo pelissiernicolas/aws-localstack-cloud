@@ -3,26 +3,8 @@
 Lab d'infrastructure n-tiers AWS déployé sur **LocalStack Pro** via Terraform.
 
 ## Architecture
+![Architecture](img/Sans-titre-2026-05-01-1951.png)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  VPC 172.16.0.0/16                                          │
-│                                                             │
-│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐    │
-│  │ Public AZ-a  │   │ Public AZ-b  │   │ Public AZ-c  │    │
-│  │ + NAT GW     │   └──────────────┘   └──────────────┘    │
-│  │ + EC2 web-1  │                                          │
-│  └──────┬───────┘                                          │
-│         │                                                  │
-│  ┌──────┴───────┐   ┌──────────────┐   ┌──────────────┐    │
-│  │ Web AZ-a     │   │ Web AZ-b     │   │ Web AZ-c     │    │
-│  └──────────────┘   └──────────────┘   └──────────────┘    │
-│         (routés via NAT GW)                                │
-└─────────────────────────────────────────────────────────────┘
-
-      DynamoDB (hors VPC, service managé)
-      Secrets Manager (credentials applicatifs)
-```
 
 | Composant | Ressource Terraform | Description |
 |---|---|---|
