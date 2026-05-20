@@ -1,11 +1,29 @@
-resource "aws_launch_template" "web" {
-  name_prefix   = "${var.project_name}-web-"
-  image_id      = "ami-12345678"
-  instance_type = "t3.micro"
+resource "aws_key_pair" "localstack" {
+  key_name   = "${var.project_name}-key"
+  public_key = file("${path.module}/localstack.pub")
+}
 
-  vpc_security_group_ids = [
-    aws_security_group.web.id
-  ]
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd*/ubuntu-*"]
+  }
+}
+
+locals {
+  web_ami = coalesce(var.web_ami_id, data.aws_ami.ubuntu.id)
+}
+
+resource "aws_instance" "web" {
+  ami                         = local.web_ami
+  instance_type               = "t3.micro"
+  subnet_id                   = aws_subnet.public[0].id
+  key_name                    = aws_key_pair.localstack.key_name
+  vpc_security_group_ids      = [aws_security_group.web.id]
+  associate_public_ip_address = true
 
   user_data = base64encode(<<EOF
 #!/bin/bash
@@ -13,39 +31,8 @@ echo "Web Server - ${var.project_name}" > /var/www/html/index.html
 EOF
   )
 
-  tag_specifications {
-    resource_type = "instance"
-
-    tags = {
-      Name = "${var.project_name}-web-server"
-      Tier = "web"
-    }
+  tags = {
+    Name = "${var.project_name}-web-1"
+    Tier = "web"
   }
-}
-
-resource "aws_autoscaling_group" "web" {
-  name                = "${var.project_name}-asg"
-  min_size            = 2
-  max_size            = 4
-  desired_capacity    = 3
-  vpc_zone_identifier = aws_subnet.web[*].id
-
-  # target_group_arns = [
-  #   aws_lb_target_group.web.arn
-  # ]
-
-  launch_template {
-    id      = aws_launch_template.web.id
-    version = "$Latest"
-  }
-
-  tag {
-    key                 = "Name"
-    value               = "${var.project_name}-web-asg"
-    propagate_at_launch = true
-  }
-
-  # depends_on = [
-  #   aws_lb_listener.http
-  # ]
 }

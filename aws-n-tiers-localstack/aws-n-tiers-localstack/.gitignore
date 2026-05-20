@@ -1,0 +1,17 @@
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+!terraform.tfvars
+!terraform.tfvars.example
+
+# SSH keys (clé privée)
+localstack
+!localstack.pub
+
+# Env local généré
+.env.local
+
+# macOS
+.DS_Store
